@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  backuper:
+    build: .
+    container_name: backuper
+    restart: unless-stopped
+    volumes:
+      - ./logs:/var/log/backuper # Logs
+      - /mnt/backups:/mnt/backups # Backup destination folder
+      # Mount your target data folder
+      - /srv/backend_prod:/srv/backend_prod:ro
+      - /srv/frontend_prod:/srv/frontend_prod:ro
+    environment:
+      - TZ=Europe/Kyiv
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"

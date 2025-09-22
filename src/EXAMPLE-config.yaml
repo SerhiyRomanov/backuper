@@ -1,0 +1,34 @@
+backup_folder: "/mnt/backups"
+retention_days: 7
+cron_schedule: "0 3 * * *"
+
+log_file: "/var/log/backuper/backup.log"
+
+db:
+  enabled: true
+  name: "iptvm"
+  user: "iptvm"
+  password: ""
+  host: "127.0.0.1"
+  port: 5432
+  container_name: "postgres_db"
+
+files:
+  includes:
+    - "/srv/backend_prod"
+    - "/srv/frontend_prod"
+
+  excludes:
+    - "/srv/frontend_prod/node_modules"
+    - "/srv/backend_prod/.git"
+    - "/srv/backend_prod/geoip_dbs"
+
+notifications:
+  emails:
+    - "admin@example.com"
+    - "devops@example.com"
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  smtp_user: "backup@example.com"
+  smtp_password: "yourpassword"
+  from_email: "backup@example.com"
