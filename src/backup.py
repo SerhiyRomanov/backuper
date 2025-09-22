@@ -62,14 +62,14 @@ def send_failure_email(cfg: dict, subject: str, body: str, logger: logging.Logge
 
 # ----------------- archive -----------------
 def create_archive(cfg: dict, date_str: str, backup_dir: Path, logger: logging.Logger) -> Path:
-    includes = cfg.get("includes", [])
-    excludes = cfg.get("excludes", [])
+    includes = cfg.get("files", {}).get("includes", [])
+    excludes = cfg.get("files", {}).get("excludes", [])
     out_path = backup_dir / f"{date_str}-backend.tar.gz"
 
     # Build safe shell pipeline: tar -> pigz
     exclude_flags = " ".join(f"--exclude='{e}'" for e in excludes)
     include_list = " ".join(f"'{p}'" for p in includes)
-    tar_cmd = f"tar {exclude_flags} -cf - {include_list} | pigz --best -p2 > '{out_path}'"
+    tar_cmd = f"tar {exclude_flags} -cf - {include_list}| pigz --best -p$(nproc) > '{out_path}'"
 
     logger.info("Creating archive (tar -> pigz)...")
     logger.debug("Running: " + tar_cmd)
