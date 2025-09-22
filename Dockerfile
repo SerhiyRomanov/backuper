@@ -24,9 +24,9 @@ RUN pip install --no-cache /wheels/*
 COPY ./src $APP_HOME
 
 RUN chown -R app:app $APP_HOME
-USER app
 
 COPY ./entrypoint.sh /
 RUN chmod +x /entrypoint.sh
 
+USER app
 ENTRYPOINT ["/entrypoint.sh"]
