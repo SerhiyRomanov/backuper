@@ -11,7 +11,7 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.t
 # main image
 FROM python:3.13-slim
 
-RUN mkdir -p /app && addgroup --system app && adduser --system --group app
+RUN mkdir -p /app
 ENV APP_HOME=/app
 WORKDIR /app
 
@@ -23,10 +23,7 @@ COPY --from=builder $APP_HOME/wheels /wheels
 RUN pip install --no-cache /wheels/*
 COPY ./src $APP_HOME
 
-RUN chown -R app:app $APP_HOME
-
 COPY ./entrypoint.sh /
 RUN chmod +x /entrypoint.sh
 
-USER app
 ENTRYPOINT ["/entrypoint.sh"]
