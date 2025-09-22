@@ -26,7 +26,7 @@ COPY ./src $APP_HOME
 RUN chown -R app:app $APP_HOME
 USER app
 
-ADD entrypoint.sh $APP_HOME
+COPY entrypoint.sh $APP_HOME
 RUN chmod +x /app/entrypoint.sh
 
 ENTRYPOINT ["/app/entrypoint.sh"]
