@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x
 
 # === CONFIG ===
 PROJECT_DIR="$(pwd)"
@@ -13,7 +14,7 @@ apt-get update && apt-get install -y cron pigz docker-cli
 echo "[+] Setting up cron job"
 CRON_SCHEDULE=$(grep cron_schedule "$CONFIG_FILE" | awk '{print $2}')
 
-echo $CRON_SCHEDULE python3 PROJECT_DIR/db_backup.py PROJECT_DIR/config.yaml >> /var/log/db_backuper.log 2>&1\" > /etc/cron.d/db_backuper
+echo $CRON_SCHEDULE python3 PROJECT_DIR/db_backup.py PROJECT_DIR/config.yaml >> /var/log/backuper/db_backuper.log 2>&1\" > /etc/cron.d/db_backuper
 chmod 0644 /etc/cron.d/db_backuper && crontab /etc/cron.d/db_backuper
 
 crontab -l

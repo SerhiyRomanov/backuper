@@ -1,4 +1,5 @@
 .idea
 .venv
+logs
 docker-compose.yml
 src/config.yaml

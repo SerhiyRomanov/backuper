@@ -1,8 +1,8 @@
-backup_folder: "/mnt/backups"
+backup_folder: "/backups"
 retention_days: 7
 cron_schedule: "0 3 * * *"
 
-log_file: "/var/log/backuper/backup.log"
+log_file: "/var/log/backuper/files-backuper.log"
 
 db:
   enabled: true
@@ -21,7 +21,6 @@ files:
   excludes:
     - "/srv/frontend_prod/node_modules"
     - "/srv/backend_prod/.git"
-    - "/srv/backend_prod/geoip_dbs"
 
 notifications:
   emails:

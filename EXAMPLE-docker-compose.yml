@@ -1,5 +1,13 @@
 version: "3.9"
 
+volumes:
+  backups:
+    driver: local
+    driver_opts:
+      type: cifs
+      device: "\\uXXXXXX-subX.your-storagebox.de\uXXXXXX-subX"
+      o: "username=user,password=pass,vers=3.0"
+
 services:
   backuper:
     build: .
@@ -7,7 +15,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./logs:/var/log/backuper # Logs
-      - /mnt/backups:/mnt/backups # Backup destination folder
+      - /backups:/mnt/backups # Backup destination folder
       # Mount your target data folder
       - /srv/backend_prod:/srv/backend_prod:ro
       - /srv/frontend_prod:/srv/frontend_prod:ro
