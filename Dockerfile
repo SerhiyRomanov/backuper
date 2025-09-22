@@ -16,8 +16,7 @@ ENV APP_HOME=/app
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends cron tar pigz && \
-    pip install yq && \
+    apt-get install -y --no-install-recommends yq cron tar pigz && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder $APP_HOME/wheels /wheels
