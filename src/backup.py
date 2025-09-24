@@ -72,7 +72,7 @@ def create_archive(cfg: dict, date_str: str, backup_dir: Path, logger: logging.L
     tar_cmd = f"tar {exclude_flags} -cf - {include_list}| pigz --best -p$(nproc) > '{out_path}'"
 
     logger.info("Creating archive (tar -> pigz)...")
-    logger.debug("Running: " + tar_cmd)
+    logger.info("Running: " + tar_cmd)
     subprocess.run(tar_cmd, shell=True, check=True, executable="/bin/bash")
     logger.info(f"Archive created: {out_path}")
     return out_path
