@@ -27,7 +27,7 @@ export EXCLUDE_FOLDERS=$(yq -r '.exclude_folders | map("--exclude " + .) | join(
 
 
 echo "Transfer files ..."
-borg create -v --stats                   \
+borg create -v --stats -C zstd,3 \
     $REPO::'{now:%Y-%m-%d-%H-%M}'  \
     $INCLUDE_FOLDERS \
     $EXCLUDE_FOLDERS
