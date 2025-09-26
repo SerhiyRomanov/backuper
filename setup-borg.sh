@@ -11,12 +11,12 @@ set -xe
 apt install -y borgbackup yq
 borg --version
 
-export REPOSITORY_PATH=$(yq '.repository_path' "$CONFIG_FILE")
-export REPOSITORY_PORT=$(yq '.repository_port' "$CONFIG_FILE")
-export REPOSITORY_NAME=$(yq '.repository_name' "$CONFIG_FILE")
-export PRIVATE_KEY_PATH=$(yq '.private_key_path' "$CONFIG_FILE")
+export REPOSITORY_PATH=$(yq -r '.repository_path' "$CONFIG_FILE")
+export REPOSITORY_PORT=$(yq -r '.repository_port' "$CONFIG_FILE")
+export REPOSITORY_NAME=$(yq -r '.repository_name' "$CONFIG_FILE")
+export PRIVATE_KEY_PATH=$(yq -r '.private_key_path' "$CONFIG_FILE")
 
-export BORG_PASSPHRASE=$(yq '.repository_passphrase' "$CONFIG_FILE")
+export BORG_PASSPHRASE=$(yq -r '.repository_passphrase' "$CONFIG_FILE")
 export BORG_RSH="ssh -i ${PRIVATE_KEY_PATH}"
 
 
