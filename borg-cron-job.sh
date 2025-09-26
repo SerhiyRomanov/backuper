@@ -34,7 +34,7 @@ borg create -v --stats -C zstd,3 \
 
 borg prune -v --list --stats \
   $REPO \
-  $(yq '.borg_prune_params | join(" ")' "$CONFIG_FILE")
+  $(yq -r '.borg_prune_params | join(" ")' "$CONFIG_FILE")
 
 borg compact --progress $REPO
 
