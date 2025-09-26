@@ -22,7 +22,7 @@ export BORG_RSH="ssh -i ${PRIVATE_KEY_PATH}"
 
 # === SETUP CRON ===
 echo "[+] Setting up cron job"
-CRON_SCHEDULE=$(yq '.cron' $CONFIG_FILE)
+CRON_SCHEDULE=$(yq -r '.cron' $CONFIG_FILE)
 mkdir -p "$(pwd)/logs"
 
 echo "${CRON_SCHEDULE} $(pwd)/borg-cron-job.sh $(pwd)/config.yaml >> $(pwd)/logs/borg-backupes.log 2>&1" > /etc/cron.d/borg_backuper

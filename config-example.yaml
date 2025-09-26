@@ -1,3 +1,4 @@
+cron: 0 3 * * *
 repository_path: "ssh://u494207-sub1@u494207-sub1.your-storagebox.de"
 repository_port: 23
 repository_name: "my-backups"
