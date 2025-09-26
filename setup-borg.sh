@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+CONFIG_FILE=$1
+if [ -z "$CONFIG_FILE" ]; then
+    echo "Usage: $0 <config_file>"
+    exit 1
+fi
+
+set -xe
+
+apt install -y borgbackup yq
+borg --version
+
+export REPOSITORY_PATH=$(yq '.repository_path' "$CONFIG_FILE")
+export REPOSITORY_PORT=$(yq '.repository_port' "$CONFIG_FILE")
+export REPOSITORY_NAME=$(yq '.repository_name' "$CONFIG_FILE")
+export PRIVATE_KEY_PATH=$(yq '.private_key_path' "$CONFIG_FILE")
+
+export BORG_PASSPHRASE=$(yq '.repository_passphrase' "$CONFIG_FILE")
+export BORG_RSH="ssh -i ${PRIVATE_KEY_PATH}"
+
+
+# === SETUP CRON ===
+echo "[+] Setting up cron job"
+CRON_SCHEDULE=$(yq '.cron' $CONFIG_FILE)
+mkdir -p "$(pwd)/logs"
+
+echo "${CRON_SCHEDULE} $(pwd)/borg-cron-job.sh $(pwd)/config.yaml >> $(pwd)/logs/borg-backupes.log 2>&1" > /etc/cron.d/borg_backuper
+chmod 0644 /etc/cron.d/borg_backuper && crontab /etc/cron.d/borg_backuper
+crontab -l
+
+# === Copy keys ===
+ssh-copy-id -p $REPOSITORY_PORT -s $REPOSITORY_PATH
+
+# === Setup repo ===
+borg init --encryption=repokey --remote-path=borg-1.4 $REPOSITORY_PATH:$REPOSITORY_PORT/./$REPOSITORY_NAME
+
+echo "Done"

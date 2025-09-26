@@ -2,4 +2,4 @@
 .venv
 logs
 docker-compose.yml
-src/config.yaml
+config.yaml

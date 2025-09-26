@@ -1,0 +1,20 @@
+repository_path: "ssh://u494207-sub1@u494207-sub1.your-storagebox.de"
+repository_port: 23
+repository_name: "my-backups"
+repository_passphrase: "secret"
+borg_prune_params:
+  - --keep-within=10d
+  - --keep-weekly=7
+  - --keep-monthly=10
+
+private_key_path: "/root/.ssh/id_rsa"
+
+include_folders:
+  - ./
+  - ./src
+
+exclude_folders:
+  - ./tmp
+  - ./logs
+  - ./venv
+
