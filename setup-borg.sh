@@ -25,7 +25,8 @@ echo "[+] Setting up cron job"
 CRON_SCHEDULE=$(yq -r '.cron' $CONFIG_FILE)
 mkdir -p "$(pwd)/logs"
 
-echo "${CRON_SCHEDULE} /bin/bash $(pwd)/borg-cron-job.sh $(pwd)/config.yaml >> $(pwd)/logs/borg-backupes.log 2>&1" > /etc/cron.d/borg_backuper
+echo "${CRON_SCHEDULE} root /bin/bash $(pwd)/borg-cron-job.sh $(pwd)/config.yaml >> $(pwd)/logs/borg-backupes.log 2>&1" > /etc/cron.d/borg_backuper
+
 chmod 0644 /etc/cron.d/borg_backuper && crontab /etc/cron.d/borg_backuper
 crontab -l
 
