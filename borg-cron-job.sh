@@ -20,7 +20,7 @@ export PRIVATE_KEY_PATH=$(yq -r '.private_key_path' "$CONFIG_FILE")
 export BORG_PASSPHRASE=$(yq -r '.repository_passphrase' "$CONFIG_FILE")
 export REPO=$REPOSITORY_PATH:$REPOSITORY_PORT/./$REPOSITORY_NAME
 
-export BORG_RSH="ssh -vvv -o IdentitiesOnly=yes -i ${PRIVATE_KEY_PATH}"
+export BORG_RSH="ssh -v -o IdentitiesOnly=yes -i ${PRIVATE_KEY_PATH}"
 
 export INCLUDE_FOLDERS=$(yq -r '.include_folders | join(" ")' "$CONFIG_FILE")
 export EXCLUDE_FOLDERS=$(yq -r '.exclude_folders | map("--exclude " + .) | join(" ")' "$CONFIG_FILE")
