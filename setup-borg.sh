@@ -30,7 +30,7 @@ chmod 0644 /etc/cron.d/borg_backuper && crontab /etc/cron.d/borg_backuper
 crontab -l
 
 # === Copy keys ===
-ssh-copy-id -p -s $REPOSITORY_PORT -s $REPOSITORY_PATH
+ssh-copy-id -s -p $REPOSITORY_PORT -s $REPOSITORY_PATH
 
 # === Setup repo ===
 borg init --encryption=repokey --remote-path=borg-1.4 $REPOSITORY_PATH:$REPOSITORY_PORT/./$REPOSITORY_NAME
