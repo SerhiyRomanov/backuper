@@ -17,8 +17,7 @@ export REPOSITORY_NAME=$(yq -r '.repository_name' "$CONFIG_FILE")
 export PRIVATE_KEY_PATH=$(yq -r '.private_key_path' "$CONFIG_FILE")
 
 export BORG_PASSPHRASE=$(yq -r '.repository_passphrase' "$CONFIG_FILE")
-export BORG_RSH="ssh -v -i ${PRIVATE_KEY_PATH}"
-
+export BORG_RSH="ssh -v -f -i ${PRIVATE_KEY_PATH}"
 
 # === SETUP CRON ===
 echo "[+] Setting up cron job"
