@@ -17,7 +17,7 @@ export REPOSITORY_NAME=$(yq -r '.repository_name' "$CONFIG_FILE")
 export PRIVATE_KEY_PATH=$(yq -r '.private_key_path' "$CONFIG_FILE")
 
 export BORG_PASSPHRASE=$(yq -r '.repository_passphrase' "$CONFIG_FILE")
-export BORG_RSH="ssh -i ${PRIVATE_KEY_PATH}"
+export BORG_RSH="ssh -v -i ${PRIVATE_KEY_PATH}"
 
 
 # === SETUP CRON ===
@@ -25,7 +25,7 @@ echo "[+] Setting up cron job"
 CRON_SCHEDULE=$(yq -r '.cron' $CONFIG_FILE)
 mkdir -p "$(pwd)/logs"
 
-echo "${CRON_SCHEDULE} root /bin/bash $(pwd)/borg-cron-job.sh $(pwd)/config.yaml >> $(pwd)/logs/borg-backupes.log 2>&1" > /etc/cron.d/borg_backuper
+echo "${CRON_SCHEDULE} /bin/bash $(pwd)/borg-cron-job.sh $(pwd)/config.yaml >> $(pwd)/logs/borg-backupes.log 2>&1" > /etc/cron.d/borg_backuper
 
 chmod 0644 /etc/cron.d/borg_backuper && crontab /etc/cron.d/borg_backuper
 crontab -l
