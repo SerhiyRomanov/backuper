@@ -22,7 +22,7 @@ export CRON_SCHEDULE=$(yq -r '.cron' $CONFIG_FILE)
 
 mkdir -p "$(pwd)/logs"
 
-echo "${CRON_SCHEDULE} /bin/bash $(pwd)/${CRON_FILENAME} $(pwd)/${CONFIG_FILE} >> $(pwd)/logs/${CRON_FILENAME}.log 2>&1" > /etc/cron.d/${CRON_FILENAME}.conf
+echo "${CRON_SCHEDULE} /usr/bin/python3 $(pwd)/${CRON_FILENAME} $(pwd)/${CONFIG_FILE} >> $(pwd)/logs/${CRON_FILENAME}.log 2>&1" > /etc/cron.d/${CRON_FILENAME}.conf
 
 chmod 0644 /etc/cron.d/${CRON_FILENAME}.conf && crontab /etc/cron.d/${CRON_FILENAME}.conf
 crontab -l
