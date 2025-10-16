@@ -37,6 +37,7 @@ class BorgBackup:
         }
 
     def run(self, args):
+        print(f"Running borg command: borg {' '.join(args)}")
         subprocess.run(
             ["borg", *args],
             check=True,
