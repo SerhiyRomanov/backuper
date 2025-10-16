@@ -13,11 +13,7 @@ borg --version
 
 export REPOSITORY_PATH=$(yq -r '.repository_path' "$CONFIG_FILE")
 export REPOSITORY_PORT=$(yq -r '.repository_port' "$CONFIG_FILE")
-export REPOSITORY_NAME=$(yq -r '.repository_name' "$CONFIG_FILE")
 export PRIVATE_KEY_PATH=$(yq -r '.private_key_path' "$CONFIG_FILE")
-
-export BORG_PASSPHRASE=$(yq -r '.repository_passphrase' "$CONFIG_FILE")
-export BORG_RSH="ssh -v -o IdentitiesOnly=yes -i ${PRIVATE_KEY_PATH} "
 
 # === SETUP CRON ===
 echo "[+] Setting up cron job"
@@ -35,6 +31,6 @@ crontab -l
 ssh-copy-id -i ${PRIVATE_KEY_PATH} -p $REPOSITORY_PORT -s $REPOSITORY_PATH
 
 # === Setup repo ===
-bash borg.sh $CONFIG_FILE "init --encryption=repokey --remote-path=borg-1.4 $REPOSITORY_PATH:$REPOSITORY_PORT/./$REPOSITORY_NAME"
+python3 borg_wrapper.py $$CONFIG_FILE "init"
 
 echo "Done"
