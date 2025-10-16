@@ -31,6 +31,6 @@ crontab -l
 ssh-copy-id -i ${PRIVATE_KEY_PATH} -p $REPOSITORY_PORT -s $REPOSITORY_PATH
 
 # === Setup repo ===
-python3 borg_wrapper.py $$CONFIG_FILE "init"
+python3 borg_wrapper.py $CONFIG_FILE "init"
 
 echo "Done"
