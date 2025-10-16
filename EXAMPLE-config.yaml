@@ -1,4 +1,8 @@
+private_key_path: "/root/.ssh/id_rsa"
+
+# Borg backup settings
 cron: 0 3 * * *
+cron_filename: backup-files.sh
 repository_path: "ssh://u494207-sub1@u494207-sub1.your-storagebox.de"
 repository_port: 23
 repository_name: "my-backups"
@@ -7,8 +11,6 @@ borg_prune_params:
   - --keep-within=10d
   - --keep-weekly=7
   - --keep-monthly=10
-
-private_key_path: "/root/.ssh/id_rsa"
 
 include_folders:
   - ./
@@ -19,3 +21,11 @@ exclude_folders:
   - ./logs
   - ./venv
 
+# DB backup
+cron_db: 0 3 * * *
+db_host: 127.0.0.1
+db_user:
+db_password:
+db_name:
+db_backup_local_dir: /tmp/
+db_backup_keep_within: 14 # days
