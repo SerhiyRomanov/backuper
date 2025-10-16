@@ -36,7 +36,7 @@ class BorgBackup:
             **os.environ,  # Include existing environment variables
         }
 
-    def run(self, *args):
+    def run(self, args):
         subprocess.run(
             ["borg", *args],
             check=True,
@@ -44,12 +44,11 @@ class BorgBackup:
         )
 
     def init(self, encryption="repokey", remote_path="borg-1.4"):
-        self.run(
-            "init",
+        self.run(["init",
             f"--encryption={encryption}",
             f"--remote-path={remote_path}",
             self.repo
-        )
+        ])
 
     def create_files_backup_from_config(self):
         include_folders = self.config_data.get("include_folders", [])
