@@ -53,9 +53,9 @@ class BorgBackup:
 
     def create_files_backup_from_config(self):
         include_folders = self.config_data.get("include_folders", [])
-        exclude_folders = [
-            f"--exclude {folder}" for folder in self.config_data.get("exclude_folders", [])
-        ]
+        exclude_folders = []
+        for folder in self.config_data.get("exclude_folders", []):
+            exclude_folders.extend(["--exclude", folder])
 
         self.run(
             [
