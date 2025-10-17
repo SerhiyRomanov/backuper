@@ -9,6 +9,7 @@ fi
 set -xe
 
 apt install -y borgbackup yq
+pip3 install yq
 borg --version
 
 export REPOSITORY_PATH=$(yq -r '.repository_path' "$CONFIG_FILE")

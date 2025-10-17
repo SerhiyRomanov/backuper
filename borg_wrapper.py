@@ -60,8 +60,17 @@ class BorgBackup:
         self.run(
             [
                 "create", "-v", "--stats", "-C", "zstd,3",
-                f'{self.repo}::{datetime.now().strftime("%Y-%m-%d-%H-%M")}',
+                f'{self.repo}::{datetime.now().strftime("%Y-%m-%d-%H-%M")}-files',
                 *include_folders, *exclude_folders
+            ],
+        )
+
+    def create_files_backup(self, backup_name: str, files: list):
+        self.run(
+            [
+                "create", "-v", "--stats", "-C", "zstd,3",
+                f'{self.repo}::{datetime.now().strftime("%Y-%m-%d-%H-%M")}-{backup_name}',
+                *files
             ],
         )
 
