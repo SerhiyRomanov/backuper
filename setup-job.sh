@@ -8,7 +8,7 @@ fi
 
 set -xe
 
-apt install -y borgbackup yq python3-yq
+apt install -y borgbackup yq python3-yaml
 borg --version
 
 export REPOSITORY_PATH=$(yq -r '.repository_path' "$CONFIG_FILE")
