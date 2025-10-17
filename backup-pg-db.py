@@ -34,6 +34,11 @@ NUM_PROCESSORS = os.cpu_count() - 1
 if NUM_PROCESSORS < 1:
     NUM_PROCESSORS = 1
 
+# Check if pg_dump exists
+if subprocess.run(["which", "pg_dump"], capture_output=True).returncode != 0:
+    print("Error: The 'pg_dump' command is not available. Please ensure PostgreSQL tools are installed.")
+    sys.exit(1)
+
 # Perform the database dump and compress it
 pg_dump_command = (
     f"{DOCKER_COMMAND} "

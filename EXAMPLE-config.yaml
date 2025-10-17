@@ -2,13 +2,13 @@ private_key_path: "/root/.ssh/id_rsa"
 
 # Common Borg backup settings
 cron: 0 3 * * *
-cron_filename: backup-files.sh
-repository_path: "ssh://u494207-sub1@u494207-sub1.your-storagebox.de"
+cron_filename: backup-files.py
+repository_path: ssh://u494207-sub1@u494207-sub1.your-storagebox.de
 repository_port: 23
-repository_name: "my-backups"
-repository_passphrase: "secret"
+repository_name: my-backups
+repository_passphrase: secret
 borg_prune_params:
-  - --keep-within=10d
+  - --keep-within=14d
   - --keep-weekly=7
   - --keep-monthly=10
 
@@ -23,7 +23,9 @@ exclude_folders:
   - ./venv
 
 # DB backup specific
+db_docker_container_name:
 db_host: 127.0.0.1
+db_port: 5432
 db_user:
 db_password:
 db_name:
