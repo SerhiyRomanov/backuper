@@ -3,7 +3,18 @@
 import sys
 from datetime import datetime
 
+from backup_config import borg_connection, load_config
 from borg_wrapper import BorgBackup
+
+
+def create_files_backup_from_config(borg, config):
+    archive_name = f'{datetime.now().strftime("%Y-%m-%d-%H-%M")}-files'
+    borg.create(
+        archive_name,
+        config.get("include_folders", []),
+        exclude=config.get("exclude_folders", []),
+    )
+
 
 def main():
     if len(sys.argv) < 2:
@@ -14,13 +25,15 @@ def main():
 
     print(f"###### Backup started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ######")
 
-    borg = BorgBackup(config_file)
+    config = load_config(config_file)
+    borg = BorgBackup(**borg_connection(config))
 
     # Transfer files
     print("Transfer files ...")
-    borg.create_files_backup_from_config()
+    create_files_backup_from_config(borg, config)
 
-    borg.prune_and_compact_backups()
+    borg.prune(config.get("borg_prune_params", []))
+    borg.compact()
 
     print(f"###### Backup ended: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ######")
 

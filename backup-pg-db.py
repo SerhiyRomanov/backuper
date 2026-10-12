@@ -3,8 +3,7 @@ import sys
 import subprocess
 from datetime import datetime
 
-import yaml
-
+from backup_config import borg_connection, load_config
 from borg_wrapper import BorgBackup
 
 if len(sys.argv) < 2:
@@ -14,8 +13,7 @@ if len(sys.argv) < 2:
 config_file = sys.argv[1]
 
 # Read configuration values
-with open(config_file, 'r') as file:
-    config = yaml.safe_load(file)
+config = load_config(config_file)
 
 DB_DOCKER_CONTAINER_NAME = config.get('db_docker_container_name', None)
 DB_HOST = config['db_host']
@@ -52,12 +50,14 @@ backup_file_size = os.path.getsize(LOCAL_BACKUP_FILE) / (1024 * 1024)
 print(f"The size of the backup file '{LOCAL_BACKUP_FILE}' is {backup_file_size:.2f} MB.")
 
 # Transfer the backup file to the remote server
-borg = BorgBackup(config_file)
-borg.create_files_backup("postgesql", [LOCAL_BACKUP_FILE])
+borg = BorgBackup(**borg_connection(config))
+archive_name = f'{datetime.now().strftime("%Y-%m-%d-%H-%M")}-postgesql'
+borg.create(archive_name, [LOCAL_BACKUP_FILE])
 
 # Remove the local backup file
 os.remove(LOCAL_BACKUP_FILE)
 
-borg.prune_and_compact_backups()
+borg.prune(config.get("borg_prune_params", []))
+borg.compact()
 
 print("Backup completed successfully.")
