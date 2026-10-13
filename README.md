@@ -4,6 +4,10 @@
 3. Edit `config.yaml` to setup
 4. Execute `sudo bash setup-job.sh config.yaml`
 
+`setup-job.sh` uses Bash and `yq` to read configuration, with no embedded Python. It supports relative or absolute configuration paths and uses its own directory as the backup working directory. It installs dependencies, validates the schedule, installs the SSH public key, and initializes the Borg repository before publishing a root job in `/etc/cron.d/backuper-<id>`. Each configuration path has its own job file, with logs in the project's `logs` directory. Existing user crontabs are preserved. The script targets Debian-style cron with `crontab -n` validation; PostgreSQL backups also install `postgresql-client` and `pigz`.
+
+If you used the old setup script, remove its backup entry from root's user crontab with `sudo crontab -e` once to avoid running both the old entry and the new job. Preserve any unrelated entries.
+
 ## Borg CLI
 
 Requires Python 3, PyYAML, and Borg 1.x installed locally, plus access to the remote repository configured in the YAML file.
