@@ -73,6 +73,9 @@ class BorgBackup:
         """Reclaim repository space after archives have been removed."""
         self.run(["compact", "--progress", self.repo])
 
+    def info(self):
+        self.run(["info", self.repo])
+
     def ls(self):
         """List remote archives with their original, compressed, and unique sizes."""
         result = self.run(
@@ -137,6 +140,7 @@ def build_parser():
     prune.add_argument("--glob-archives", help="only prune archive names matching this pattern")
     prune.add_argument("--dry-run", action="store_true", help="show pruning actions without deleting archives")
     commands.add_parser("compact", help="reclaim space after pruning archives")
+    commands.add_parser("info", help="show repository information and verify access")
     commands.add_parser("ls", help="list remote backups with dates and sizes")
     extract = commands.add_parser("extract", help="download and restore a backup into a local folder")
     extract.add_argument("target_backup", help="archive name shown by ls")

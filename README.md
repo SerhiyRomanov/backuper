@@ -6,9 +6,9 @@ Repository settings live under `general`. Named jobs live under `jobs`, each wit
 
 1. Clone the project onto your Debian/Ubuntu backup machine, for example `/srv/backuper`.
 2. Copy `EXAMPLE-config.yaml` to `config.yaml` and configure your repository and jobs.
-3. Run `sudo bash setup-job.sh config.yaml` to install dependencies, set up SSH, initialize a new Borg repository, and install the schedule.
+3. Run `sudo bash setup-job.sh config.yaml` to install dependencies, set up SSH, reuse an accessible Borg repository or initialize a new one, and install the schedule.
 
-Setup uses Bash and `yq`, without embedded Python. It installs one `* * * * *` cron entry invoking `backuper.py`, with output appended to `logs/backuper.log`. Each configuration path has its own managed `/etc/cron.d/backuper-<id>` file; other cron files and user crontabs are preserved. The job changes into the project directory and uses an absolute configuration path. Schedule edits take effect on the next invocation, without changing cron.
+`setup-job.sh` is a short launcher that installs base packages and calls `setup_job.py`. Python reads the config, installs source-specific packages, sets up SSH, reuses or initializes the repository, and installs one `* * * * *` cron entry invoking `backuper.py`. Output is appended to `logs/backuper.log`. Each configuration path has its own managed `/etc/cron.d/backuper-<id>` file; other cron files and user crontabs are preserved. The job changes into the project directory and uses an absolute configuration path. Schedule edits take effect on the next invocation, without changing cron.
 
 ```sh
 python3 backuper.py -h
@@ -17,7 +17,7 @@ python3 backuper.py files            # Run one job immediately
 python3 backuper.py -c other.yaml postgresql
 ```
 
-The default config is `./config.yaml`, resolved relative to the caller. Backup paths are resolved from the project directory. PyYAML is the only Python dependency; the scheduler uses the standard library, without croniter. Setup installs Borg, PyYAML, `yq`, cron, and OpenSSH, plus `postgresql-client` and `pigz` when a PostgreSQL job is configured. Docker must already be installed for container-based PostgreSQL dumps.
+The default config is `./config.yaml`, resolved relative to the caller. Backup paths are resolved from the project directory. PyYAML is the only Python dependency; the scheduler uses the standard library, without croniter. Setup installs Python 3, Borg, PyYAML, cron, and OpenSSH, plus `postgresql-client` and `pigz` when a PostgreSQL job is configured. `yq` is no longer needed. Docker must already be installed for container-based PostgreSQL dumps.
 
 ## Scheduling and locks
 
@@ -49,6 +49,7 @@ The low-level wrapper reads repository settings from `general` and remains avail
 
 ```sh
 python3 cli.py -h
+python3 cli.py info
 python3 cli.py ls
 python3 cli.py -c other.yaml ls
 python3 cli.py extract files.2026-10-14-03-00-00-000000 ./restored
@@ -64,4 +65,4 @@ python3 cli.py compact
 
 The old flat format and standalone `backup-*.py` commands are removed. Move repository keys and retention defaults under `general`. Map `cron` to a files job and `cron_db` to PostgreSQL. Rename `include_folders`/`exclude_folders` to `include`/`exclude`, and database keys to the short names shown in the example. Existing archives remain accessible.
 
-For an existing installation, replace its managed cron command with the minute entrypoint command; the configuration's job schedules are now interpreted in Python. If the original setup installed a backup entry in root's user crontab, remove only that old backup entry using `sudo crontab -e`, preserving unrelated entries.
+For an existing installation, rerun setup to replace its managed cron command with the minute entrypoint command; the configuration's job schedules are now interpreted in Python. If the original setup installed a backup entry in root's user crontab, remove only that old backup entry using `sudo crontab -e`, preserving unrelated entries.
