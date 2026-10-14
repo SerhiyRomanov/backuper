@@ -1,32 +1,32 @@
-private_key_path: "/root/.ssh/id_rsa"
+general:
+  repository_path: ssh://user@server.example.com
+  repository_port: 23
+  repository_name: my-backups
+  private_key_path: /root/.ssh/id_rsa
+  repository_passphrase: secret
+  borg_prune_params:
+    - --keep-within=14d
+    - --keep-weekly=7
+    - --keep-monthly=10
 
-# Common Borg backup settings
-cron: 0 3 * * *
-cron_filename: backup-files.py
-repository_path: ssh://u494207-sub1@u494207-sub1.your-storagebox.de
-repository_port: 23
-repository_name: my-backups
-repository_passphrase: secret
-borg_prune_params:
-  - --keep-within=14d
-  - --keep-weekly=7
-  - --keep-monthly=10
+jobs:
+  files:
+    source: files
+    cron: "0 3 * * *"
+    config:
+      include: [./src]
+      exclude: [./tmp, ./logs, ./.locks, ./venv]
 
-# Files backup specific
-include_folders:
-  - ./
-  - ./src
-
-exclude_folders:
-  - ./tmp
-  - ./logs
-  - ./venv
-
-# DB backup specific
-db_docker_container_name:
-db_host: 127.0.0.1
-db_port: 5432
-db_user:
-db_password:
-db_name:
-db_backup_local_dir: /tmp/
+  postgresql:
+    source: postgresql
+    cron: "30 3 * * *"
+    # Optional: replaces the general policy. [] disables pruning and compaction.
+    # borg_prune_params: [--keep-last=7]
+    config:
+      host: 127.0.0.1
+      port: 5432
+      user: backup
+      password: change-me
+      database: application
+      docker_container: null
+      dump_dir: /tmp

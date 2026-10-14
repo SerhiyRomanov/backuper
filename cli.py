@@ -149,7 +149,7 @@ def main(argv=None):
     config_file = options.pop("config_file")
     command = options.pop("command")
     try:
-        backup = BorgBackup(**borg_connection(load_config(config_file)))
+        backup = BorgBackup(**borg_connection(load_config(config_file)["general"]))
         if command == "prune":
             dry_run = options.pop("dry_run")
             prune_options = [

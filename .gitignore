@@ -1,5 +1,7 @@
 .idea
 .venv
 logs
+.locks
+__pycache__/
 docker-compose.yml
 config*.yaml

@@ -1,50 +1,67 @@
-# How to set up DB backups
-1. Clone project on host machine, i.e into `/srv/backuper`
-2. `cp EXAMPLE-config.yaml config.yaml`
-3. Edit `config.yaml` to setup
-4. Execute `sudo bash setup-job.sh config.yaml`
+# Backuper
 
-`setup-job.sh` uses Bash and `yq` to read configuration, with no embedded Python. It supports relative or absolute configuration paths and uses its own directory as the backup working directory. It installs dependencies, validates the schedule, installs the SSH public key, and initializes the Borg repository before publishing a root job in `/etc/cron.d/backuper-<id>`. Each configuration path has its own job file, with logs in the project's `logs` directory. Existing user crontabs are preserved. The script targets Debian-style cron with `crontab -n` validation; PostgreSQL backups also install `postgresql-client` and `pigz`.
+Repository settings live under `general`. Named jobs live under `jobs`, each with `source`, `cron`, and source-specific `config`. See [EXAMPLE-config.yaml](EXAMPLE-config.yaml).
 
-If you used the old setup script, remove its backup entry from root's user crontab with `sudo crontab -e` once to avoid running both the old entry and the new job. Preserve any unrelated entries.
+## Setup and usage
+
+1. Clone the project onto your Debian/Ubuntu backup machine, for example `/srv/backuper`.
+2. Copy `EXAMPLE-config.yaml` to `config.yaml` and configure your repository and jobs.
+3. Run `sudo bash setup-job.sh config.yaml` to install dependencies, set up SSH, initialize a new Borg repository, and install the schedule.
+
+Setup uses Bash and `yq`, without embedded Python. It installs one `* * * * *` cron entry invoking `backuper.py`, with output appended to `logs/backuper.log`. Each configuration path has its own managed `/etc/cron.d/backuper-<id>` file; other cron files and user crontabs are preserved. The job changes into the project directory and uses an absolute configuration path. Schedule edits take effect on the next invocation, without changing cron.
+
+```sh
+python3 backuper.py -h
+python3 backuper.py                  # Run jobs due this minute
+python3 backuper.py files            # Run one job immediately
+python3 backuper.py -c other.yaml postgresql
+```
+
+The default config is `./config.yaml`, resolved relative to the caller. Backup paths are resolved from the project directory. PyYAML is the only Python dependency; the scheduler uses the standard library, without croniter. Setup installs Borg, PyYAML, `yq`, cron, and OpenSSH, plus `postgresql-client` and `pigz` when a PostgreSQL job is configured. Docker must already be installed for container-based PostgreSQL dumps.
+
+## Scheduling and locks
+
+Use numeric five-field schedules: minute, hour, day-of-month, month, weekday. The matcher supports `*`, comma-separated lists, inclusive ranges, and steps such as `*/5` or `8-18/2`. Sunday is `0` or `7`; month and weekday names, `@` shortcuts, seconds, and year fields are not supported. If both day-of-month and weekday are restricted, either can match; literal `*` means unrestricted.
+
+The runner evaluates schedules once using server local time and runs due jobs in configuration order. Each job takes a nonblocking file lock and skips if another invocation is already running or waiting for that job. Different jobs sharing a repository wait for its shared lock. Runtime locks are stored in `.locks`; leave those files in place while jobs run.
+
+There are no background workers, scheduling history, catch-up, or retries. Calling the dispatcher again within the same minute can rerun a completed job. Malformed settings, import errors, and command failures raise normally and end the invocation. Subsequent cron invocations start normally.
+
+## Sources and retention
+
+- `files`: `include` lists files/folders and optional `exclude` lists Borg exclusion patterns.
+- `postgresql`: uses `host`, `user`, `password`, `database`, and an existing `dump_dir`. `port` defaults to 5432; `docker_container` is optional. A Bash pipeline dumps the database and compresses it with `pigz`; `pipefail` stops upload when either command fails. The local dump is deleted only after successful upload. On failure, it remains for inspection and may be incomplete. Passwords are passed through the environment.
+
+Use simple job names containing letters, digits, underscores, or hyphens. Archives are named `<job-name>.<timestamp>`, including microseconds. Each job inherits `general.borg_prune_params`; a job-level list replaces it. `[]` disables pruning and compaction. Retention is scoped to `<job-name>.*`, so archives from other jobs and the old naming scheme are preserved. Supply retention rules only, without additional archive filters.
+
+To add a source, create `sources/<name>.py` with:
+
+```python
+def backup(borg, archive_name, config):
+    borg.create(archive_name, config["include"])
+```
+
+The source handles its backup operation and temporary files. The runner handles names, locks, retention, and compaction. Importing a source must not run a backup. Install any new source's prerequisites separately; MySQL is not implemented.
 
 ## Borg CLI
 
-Requires Python 3, PyYAML, and Borg 1.x installed locally, plus access to the remote repository configured in the YAML file.
+The low-level wrapper reads repository settings from `general` and remains available independently:
 
 ```sh
-python3 borg_wrapper.py -h
-python3 borg_wrapper.py ls
-python3 borg_wrapper.py extract 2026-10-12-03-00-files ./restored
-python3 borg_wrapper.py extract -h
-python3 borg_wrapper.py -c /path/to/custom-config.yaml ls
+python3 cli.py -h
+python3 cli.py ls
+python3 cli.py -c other.yaml ls
+python3 cli.py extract files.2026-10-14-03-00-00-000000 ./restored
+python3 cli.py init
+python3 cli.py create documents ./documents ./notes.txt --exclude '*.tmp'
+python3 cli.py prune --keep-within 14d --glob-archives 'files.*'
+python3 cli.py compact
 ```
 
-The configuration defaults to `config.yaml` in the current working directory. Use `-c PATH` (or `--config PATH`) before the command to select another file.
+`ls` shows names, dates, and original/compressed/deduplicated sizes. Shared chunks mean per-archive deduplicated figures do not add up to repository storage. `extract` creates the destination folder and preserves archived paths; matching existing files may be overwritten.
 
-`ls` shows archive names, creation dates, and human-readable original, compressed, and deduplicated sizes. Original size is the uncompressed data size; compressed size is the compressed data size before deduplication; deduplicated size is the stored data unique to that archive. Chunks can be shared across backups, so the deduplicated sizes do not add up to the repository's total storage. Listing sizes reads archive statistics and can take longer than listing names alone.
+## Migration
 
-`extract` downloads and restores the selected archive into the destination folder, creating it if needed. Paths inside the archive are preserved; existing files at those paths may be overwritten.
+The old flat format and standalone `backup-*.py` commands are removed. Move repository keys and retention defaults under `general`. Map `cron` to a files job and `cron_db` to PostgreSQL. Rename `include_folders`/`exclude_folders` to `include`/`exclude`, and database keys to the short names shown in the example. Existing archives remain accessible.
 
-The wrapper exposes individual Borg operations. Archive names and retention options are supplied explicitly:
-
-```sh
-python3 borg_wrapper.py init
-python3 borg_wrapper.py init repokey borg-1.4
-python3 borg_wrapper.py create documents ./documents ./notes.txt --exclude '*.tmp'
-python3 borg_wrapper.py prune --keep-within 14d --keep-weekly 7 --keep-monthly 10
-python3 borg_wrapper.py compact
-```
-
-## Backup workflows
-
-```sh
-python3 backup-files.py config.yaml
-python3 backup-pg-db.py config.yaml
-```
-
-`backup-files.py` owns configured folder selection, exclusions, timestamped archive naming, and the create/prune/compact sequence. `backup-pg-db.py` owns the database dump, timestamped archive naming, temporary dump cleanup, and its create/prune/compact sequence. Both scripts pass `borg_prune_params` from the configuration to the wrapper explicitly.
-
-`backup_config.py` loads YAML and builds the connection arguments. `BorgBackup` accepts `repository`, `private_key_path`, and `passphrase`; its methods receive explicit operation arguments and do not read workflow configuration. `ls()` returns archive statistics, which the CLI formats as a table.
-
-The workflow commands `create_files_backup_from_config`, `create_files_backup`, and `prune_and_compact_backups` have been replaced by the backup scripts and the low-level `create`, `prune`, and `compact` commands above.
+For an existing installation, replace its managed cron command with the minute entrypoint command; the configuration's job schedules are now interpreted in Python. If the original setup installed a backup entry in root's user crontab, remove only that old backup entry using `sudo crontab -e`, preserving unrelated entries.
