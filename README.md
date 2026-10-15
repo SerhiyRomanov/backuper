@@ -2,8 +2,9 @@
 
 Backups run entirely through [docker-borgmatic](https://github.com/modem7/docker-borgmatic). Borgmatic handles files, database dumps, retention, repository checks, and restores; the image provides cron scheduling. No host Python installation or custom backup runner is needed.
 
-## Prepare and run
+The Compose service, container name, and hostname are all `backuper`.
 
+## Prepare and run
 
 Install Docker with Compose, then run:
 
@@ -66,7 +67,7 @@ docker compose logs -f
 For a **new** repository, create it before starting the service:
 
 ```sh
-docker compose run --rm --entrypoint borgmatic borgmatic repo-create --encryption repokey
+docker compose run --rm --entrypoint borgmatic backuper repo-create --encryption repokey
 docker compose up -d
 ```
 
@@ -78,18 +79,20 @@ With the service running:
 
 ```sh
 # Run a backup immediately.
-docker compose exec borgmatic borgmatic create --stats --verbosity 1
+docker compose exec backuper borgmatic create --stats --verbosity 1
 
 # List archives and inspect one archive's sizes.
-docker compose exec borgmatic borgmatic repo-list
-docker compose exec borgmatic borgmatic info --archive latest
+docker compose exec backuper borgmatic repo-list
+docker compose exec backuper borgmatic info --archive latest
 
 # Extract an archive into ./restore on the host.
-docker compose exec borgmatic borgmatic extract --archive latest --destination /mnt/restore
+docker compose exec backuper borgmatic extract --archive latest --destination /mnt/restore
 ```
 
 Replace `latest` with an archive name to select a specific backup. Extraction may overwrite files in the destination. For database restores and other options, use the [Borgmatic documentation](https://torsion.org/borgmatic/).
 
 Generated configuration files, local state, and restored files are ignored by Git. One mount, `./.data:/root`, preserves Borg configuration/cache and Borgmatic's check history at their default paths. The separate SSH mount supplies `/root/.ssh`. Keep `.data/` between container recreations. If you back up this project's directory, exclude `.env`, `.data/`, and `restore/` as appropriate.
+
+A fixed container name does not clear existing stale Borg locks. Borg's lock identity also includes network identity; see [Borg's host ID documentation](https://borgbackup.readthedocs.io/en/1.4.5/usage/general.html#environment-variables). Before clearing a stale lock, confirm that no Borg operation is running against the cache or repository.
 
 The example's stable `backuper-` archive prefix scopes retention to matching backups. Keep the prefix unique if multiple configurations share a repository.

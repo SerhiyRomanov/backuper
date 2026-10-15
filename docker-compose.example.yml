@@ -1,5 +1,7 @@
 services:
-  borgmatic:
+  backuper:
+    container_name: backuper
+    hostname: backuper
     image: modem7/borgmatic-docker:2.1.6-1.4.5
     restart: unless-stopped
     network_mode: bridge
