@@ -1,7 +1,7 @@
 .idea
-.venv
-logs
-.locks
-__pycache__/
-docker-compose.yml
-config*.yaml
+.DS_Store
+/.env
+/docker-compose.yml
+/borgmatic/*.yaml
+/.data/
+/restore/

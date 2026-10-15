@@ -1,0 +1,20 @@
+services:
+  borgmatic:
+    image: modem7/borgmatic-docker:2.1.6-1.4.5
+    restart: unless-stopped
+    network_mode: bridge
+    stop_grace_period: 10m
+    env_file: .env
+    environment:
+      TZ: Europe/Kyiv
+      CRON: '0 3 * * *'
+      CRON_COMMAND: 'borgmatic-start --stats -v 1 2>&1'
+    volumes:
+      - ./borgmatic:/etc/borgmatic.d:ro
+      - ./.data:/root
+      - /root/.ssh:/root/.ssh:ro
+      # Select directories beneath /mnt/host in borgmatic/config.yaml.
+      - /:/mnt/host:ro
+      - ./restore:/mnt/restore
+    logging:
+      driver: local

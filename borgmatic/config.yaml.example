@@ -1,0 +1,35 @@
+repositories:
+  - path: ssh://user@server.example.com:23/./backups
+    label: remote
+
+source_directories:
+  - /mnt/host/etc
+  - /mnt/host/srv
+
+# Host /srv is available as /mnt/host/srv inside the container.
+exclude_patterns:
+  - /mnt/host/srv/app/tmp
+  - /mnt/host/srv/app/logs
+
+compression: zstd,3
+
+# Keep a stable, unique prefix per backup configuration. Retention matches it.
+archive_name_format: 'backuper-{now:%Y-%m-%d-%H%M%S.%f}'
+keep_within: 14d
+keep_weekly: 7
+keep_monthly: 10
+
+# Use the database container's IP on Docker's default bridge network.
+# postgresql_databases:
+#   - name: application
+#     hostname: 172.17.0.2
+#     port: 5432
+#     username: backup
+#     password: 'replace-with-database-password'
+
+# mysql_databases:
+#   - name: application
+#     hostname: 172.17.0.2
+#     port: 3306
+#     username: backup
+#     password: 'replace-with-database-password'

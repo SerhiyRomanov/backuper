@@ -1,68 +1,95 @@
 # Backuper
 
-Repository settings live under `general`. Named jobs live under `jobs`, each with `source`, `cron`, and source-specific `config`. See [EXAMPLE-config.yaml](EXAMPLE-config.yaml).
+Backups run entirely through [docker-borgmatic](https://github.com/modem7/docker-borgmatic). Borgmatic handles files, database dumps, retention, repository checks, and restores; the image provides cron scheduling. No host Python installation or custom backup runner is needed.
 
-## Setup and usage
+## Prepare and run
 
-1. Clone the project onto your Debian/Ubuntu backup machine, for example `/srv/backuper`.
-2. Copy `EXAMPLE-config.yaml` to `config.yaml` and configure your repository and jobs.
-3. Run `sudo bash setup-job.sh config.yaml` to install dependencies, set up SSH, reuse an accessible Borg repository or initialize a new one, and install the schedule.
 
-`setup-job.sh` is a short launcher that installs base packages and calls `setup_job.py`. Python reads the config, installs source-specific packages, sets up SSH, reuses or initializes the repository, and installs one `* * * * *` cron entry invoking `backuper.py`. Output is appended to `logs/backuper.log`. Each configuration path has its own managed `/etc/cron.d/backuper-<id>` file; other cron files and user crontabs are preserved. The job changes into the project directory and uses an absolute configuration path. Schedule edits take effect on the next invocation, without changing cron.
+Install Docker with Compose, then run:
 
 ```sh
-python3 backuper.py -h
-python3 backuper.py                  # Run jobs due this minute
-python3 backuper.py files            # Run one job immediately
-python3 backuper.py -c other.yaml postgresql
+./prepare.sh
 ```
 
-The default config is `./config.yaml`, resolved relative to the caller. Backup paths are resolved from the project directory. PyYAML is the only Python dependency; the scheduler uses the standard library, without croniter. Setup installs Python 3, Borg, PyYAML, cron, and OpenSSH, plus `postgresql-client` and `pigz` when a PostgreSQL job is configured. `yq` is no longer needed. Docker must already be installed for container-based PostgreSQL dumps.
+This copies the examples below, creates local state directories, and preserves existing files on subsequent runs:
 
-## Scheduling and locks
+| Example | Your configuration |
+| --- | --- |
+| `.env.example` | `.env` |
+| `docker-compose.example.yml` | `docker-compose.yml` |
+| `borgmatic/config.yaml.example` | `borgmatic/config.yaml` |
 
-Use numeric five-field schedules: minute, hour, day-of-month, month, weekday. The matcher supports `*`, comma-separated lists, inclusive ranges, and steps such as `*/5` or `8-18/2`. Sunday is `0` or `7`; month and weekday names, `@` shortcuts, seconds, and year fields are not supported. If both day-of-month and weekday are restricted, either can match; literal `*` means unrestricted.
+Keep the repository passphrase and optional MySQL password in `.env`, quoted as in the example. The PostgreSQL password stays with its connection settings in `borgmatic/config.yaml`. Set the image version, timezone, and schedule directly in `docker-compose.yml`. The example pins Borgmatic 2.1.6 with Borg 1.4.5 for existing Borg 1 repositories.
 
-The runner evaluates schedules once using server local time and runs due jobs in configuration order. Each job takes a nonblocking file lock and skips if another invocation is already running or waiting for that job. Different jobs sharing a repository wait for its shared lock. Runtime locks are stored in `.locks`; leave those files in place while jobs run.
+Set your repository URL, source directories, retention, exclusions, and database connection settings in `borgmatic/config.yaml`. The host filesystem is mounted read-only at `/mnt/host`, so you can select multiple directories without changing Compose:
 
-There are no background workers, scheduling history, catch-up, or retries. Calling the dispatcher again within the same minute can rerun a completed job. Malformed settings, import errors, and command failures raise normally and end the invocation. Subsequent cron invocations start normally.
-
-## Sources and retention
-
-- `files`: `include` lists files/folders and optional `exclude` lists Borg exclusion patterns.
-- `postgresql`: uses `host`, `user`, `password`, `database`, and an existing `dump_dir`. `port` defaults to 5432; `docker_container` is optional. A Bash pipeline dumps the database and compresses it with `pigz`; `pipefail` stops upload when either command fails. The local dump is deleted only after successful upload. On failure, it remains for inspection and may be incomplete. Passwords are passed through the environment.
-
-Use simple job names containing letters, digits, underscores, or hyphens. Archives are named `<job-name>.<timestamp>`, including microseconds. Each job inherits `general.borg_prune_params`; a job-level list replaces it. `[]` disables pruning and compaction. Retention is scoped to `<job-name>.*`, so archives from other jobs and the old naming scheme are preserved. Supply retention rules only, without additional archive filters.
-
-To add a source, create `sources/<name>.py` with:
-
-```python
-def backup(borg, archive_name, config):
-    borg.create(archive_name, config["include"])
+```yaml
+source_directories:
+  - /mnt/host/etc
+  - /mnt/host/srv/application
+  - /mnt/host/home
 ```
 
-The source handles its backup operation and temporary files. The runner handles names, locks, retention, and compaction. Importing a source must not run a backup. Install any new source's prerequisites separately; MySQL is not implemented.
+Only the listed directories are backed up. Exclusions use the same container paths. PostgreSQL connection settings, including its password, stay in the YAML; the optional MySQL example references its password from `.env`.
 
-## Borg CLI
+Compose uses `network_mode: bridge`, Docker's default network. Set the database hostname to its reachable IP address. The default bridge does not resolve container names; for name resolution, join the database's user-defined network instead. See [Docker's bridge network documentation](https://docs.docker.com/engine/network/drivers/bridge/). `localhost` refers to the backup container.
 
-The low-level wrapper reads repository settings from `general` and remains available independently:
+### SSH setup
+
+Set up SSH manually before creating a repository or starting backups. The host's `/root/.ssh` is mounted read-only at `/root/.ssh` inside the container; SSH uses its default configuration and key filenames. `prepare.sh` only copies configuration files and creates local state directories.
+
+Reuse an existing SSH key. If you do not have one, create a passwordless key for unattended backups:
 
 ```sh
-python3 cli.py -h
-python3 cli.py info
-python3 cli.py ls
-python3 cli.py -c other.yaml ls
-python3 cli.py extract files.2026-10-14-03-00-00-000000 ./restored
-python3 cli.py init
-python3 cli.py create documents ./documents ./notes.txt --exclude '*.tmp'
-python3 cli.py prune --keep-within 14d --glob-archives 'files.*'
-python3 cli.py compact
+sudo mkdir -p /root/.ssh
+sudo chmod 700 /root/.ssh
+sudo ssh-keygen -t ed25519 -N '' -f /root/.ssh/id_ed25519
 ```
 
-`ls` shows names, dates, and original/compressed/deduplicated sizes. Shared chunks mean per-archive deduplicated figures do not add up to repository storage. `extract` creates the destination folder and preserves archived paths; matching existing files may be overwritten.
+Authorize the public key on the repository server:
 
-## Migration
+```sh
+sudo ssh-copy-id -s -i /root/.ssh/id_ed25519.pub -p 23 user@server.example.com
+```
 
-The old flat format and standalone `backup-*.py` commands are removed. Move repository keys and retention defaults under `general`. Map `cron` to a files job and `cron_db` to PostgreSQL. Rename `include_folders`/`exclude_folders` to `include`/`exclude`, and database keys to the short names shown in the example. Existing archives remain accessible.
+Use your repository's username, hostname, port, and key filename. Confirm the server's host-key fingerprint and enter its account password when prompted. The host key is saved in `/root/.ssh/known_hosts`. SFTP mode supports [Hetzner Storage Boxes](https://docs.hetzner.com/storage/storage-box/ssh-keys/add-ssh-keys/). Change the SSH mount in Compose if your host stores SSH files elsewhere.
 
-For an existing installation, rerun setup to replace its managed cron command with the minute entrypoint command; the configuration's job schedules are now interpreted in Python. If the original setup installed a backup entry in root's user crontab, remove only that old backup entry using `sudo crontab -e`, preserving unrelated entries.
+### Start backups
+
+For an existing repository, use its current passphrase and SSH key and start the container:
+
+```sh
+docker compose up -d
+docker compose logs -f
+```
+
+For a **new** repository, create it before starting the service:
+
+```sh
+docker compose run --rm --entrypoint borgmatic borgmatic repo-create --encryption repokey
+docker compose up -d
+```
+
+`CRON` in Compose controls the container's schedule (daily at 03:00 by default). Apply Compose or secret changes with `docker compose up -d`. Borgmatic reads the YAML configuration on each run. Additional configurations and schedules can use the image's native `EXTRA_CRON` support; see its documentation.
+
+## Backup and restore
+
+With the service running:
+
+```sh
+# Run a backup immediately.
+docker compose exec borgmatic borgmatic create --stats --verbosity 1
+
+# List archives and inspect one archive's sizes.
+docker compose exec borgmatic borgmatic repo-list
+docker compose exec borgmatic borgmatic info --archive latest
+
+# Extract an archive into ./restore on the host.
+docker compose exec borgmatic borgmatic extract --archive latest --destination /mnt/restore
+```
+
+Replace `latest` with an archive name to select a specific backup. Extraction may overwrite files in the destination. For database restores and other options, use the [Borgmatic documentation](https://torsion.org/borgmatic/).
+
+Generated configuration files, local state, and restored files are ignored by Git. One mount, `./.data:/root`, preserves Borg configuration/cache and Borgmatic's check history at their default paths. The separate SSH mount supplies `/root/.ssh`. Keep `.data/` between container recreations. If you back up this project's directory, exclude `.env`, `.data/`, and `restore/` as appropriate.
+
+The example's stable `backuper-` archive prefix scopes retention to matching backups. Keep the prefix unique if multiple configurations share a repository.
