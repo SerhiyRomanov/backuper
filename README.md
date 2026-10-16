@@ -91,6 +91,20 @@ docker compose exec backuper borgmatic extract --archive latest --destination /m
 
 Replace `latest` with an archive name to select a specific backup. Extraction may overwrite files in the destination. For database restores and other options, use the [Borgmatic documentation](https://torsion.org/borgmatic/).
 
+Compose also enables FUSE archive browsing with `/dev/fuse`, `SYS_ADMIN`, and an unconfined AppArmor profile. On the Linux Docker host, load FUSE and recreate the container before mounting:
+
+```sh
+sudo modprobe fuse
+docker compose up -d
+docker compose exec backuper mkdir -p /mnt/restore/m
+docker compose exec backuper borgmatic mount --archive latest --mount-point /mnt/restore/m
+docker compose exec backuper ls /mnt/restore/m
+# Unmount when finished.
+docker compose exec backuper borgmatic umount --mount-point /mnt/restore/m
+```
+
+Browse the mounted view inside the container. The current bind mounts do not propagate FUSE mounts back to the host.
+
 Generated configuration files, local state, and restored files are ignored by Git. One mount, `./.data:/root`, preserves Borg configuration/cache and Borgmatic's check history at their default paths. The separate SSH mount supplies `/root/.ssh`. Keep `.data/` between container recreations. If you back up this project's directory, exclude `.env`, `.data/`, and `restore/` as appropriate.
 
 A fixed container name does not clear existing stale Borg locks. Borg's lock identity also includes network identity; see [Borg's host ID documentation](https://borgbackup.readthedocs.io/en/1.4.5/usage/general.html#environment-variables). Before clearing a stale lock, confirm that no Borg operation is running against the cache or repository.

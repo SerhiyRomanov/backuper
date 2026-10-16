@@ -6,6 +6,12 @@ services:
     restart: unless-stopped
     network_mode: bridge
     stop_grace_period: 10m
+    devices:
+      - /dev/fuse:/dev/fuse
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor=unconfined
     env_file: .env
     environment:
       TZ: Europe/Kyiv
