@@ -11,13 +11,12 @@ exclude_patterns:
   - /mnt/host/srv/app/tmp
   - /mnt/host/srv/app/logs
 
-compression: zstd,3
+compression: auto,zstd,3
 
 # Keep a stable, unique prefix per backup configuration. Retention matches it.
-archive_name_format: 'backuper-{now:%Y-%m-%d-%H%M%S.%f}'
-keep_within: 14d
-keep_weekly: 7
-keep_monthly: 10
+archive_name_format: 'backuper-{now:%Y-%m-%d-%H%M%S}'
+keep_daily: 31
+keep_weekly: 12
 
 # Use the database container's IP on Docker's default bridge network.
 # postgresql_databases:
